@@ -2,7 +2,12 @@
 // it will send a notification of a UPC code
 
 import java.awt.BorderLayout;
- 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -15,7 +20,10 @@ public class Scanner {
 	 private JFrame frame;
 	 private JPanel scannerPanel;
 	 private JButton scanButton;
-	 
+	 private List<String> upcCodes;
+	 private Random random;
+	 private Controller controller;
+
 	 public Scanner() {
 		  frame = new JFrame("Scanner");
 		  frame.getContentPane().setLayout(new BorderLayout());
@@ -23,23 +31,54 @@ public class Scanner {
 		  frame.setSize(100, 100);
 		  frame.setLocation(300,50);
 		  frame.setVisible(true);
-		  
-		  
+
+		  upcCodes = new ArrayList<>();
+		  random = new Random();
+		  loadUPCCodes();
+
 		  // Create UI elements
 		  scanButton = new JButton("Scan");
 		  scannerPanel = new JPanel();
-		  
+
 		  // Add UI element to frame
 		  scannerPanel.add(scanButton);
 		  frame.getContentPane().add(scannerPanel);
-		  
+
 		  scanButton.addActionListener(e -> generateUPC());
 	 }
 
-	private int generateUPC() {
-		int upcCode = 12345; 
+	private void loadUPCCodes() {
+		try (BufferedReader br = new BufferedReader(new FileReader("products.txt"))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] parts = line.split(",");
+				if (parts.length >= 1) {
+					upcCodes.add(parts[0]);
+				}
+			}
+		} catch (IOException e) {
+			System.err.println("Error reading products.txt: " + e.getMessage());
+		}
+	}
+
+	private String generateUPC() {
+		if (upcCodes.isEmpty()) {
+			System.out.println("No UPC codes available");
+			return null;
+		}
+		String upcCode = upcCodes.get(random.nextInt(upcCodes.size()));
 		System.out.println(upcCode);
+
+		// Notify controller if set
+		if (controller != null) {
+			controller.handleScan(upcCode);
+		}
+
 		return upcCode;
+	}
+
+	public void setController(Controller controller) {
+		this.controller = controller;
 	}
 
 	public JFrame getFrame() {
